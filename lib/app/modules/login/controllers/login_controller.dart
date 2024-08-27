@@ -34,7 +34,7 @@ class LoginController extends GetxController {
       return;
     }
 
-    EasyLoading.show();
+    // EasyLoading.show();
 
     var data = {"username": username, "password": password};
     String jsonData = jsonEncode(data);

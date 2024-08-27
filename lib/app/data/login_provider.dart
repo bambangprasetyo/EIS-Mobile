@@ -107,6 +107,69 @@ class ApiProvider1 extends CustomGetConnect {
   }
 }
 
+class Keuangan extends CustomGetConnect {
+  Future<Response> datakeuangan() async {
+    var token = SpUtil.getString("JWT");
+    if (token == null || token.isEmpty) {
+      throw Exception("Token JWT tidak tersedia. Harap login terlebih dahulu.");
+    }
+
+    var url =
+        'https://tiara.bankaltimtara.co.id/api_eis/api/list/v_keuangan?recperpage=ALL';
+    var headers = {'X-Authorization': 'Bearer $token'};
+    var responsekeuangan = await get(url, headers: headers);
+    // print(apiResponse.body);
+    return responsekeuangan;
+  }
+}
+
+class HistoriKeuangan extends CustomGetConnect {
+  Future<Response> dataHistorikeuangan(
+      String cabang, String selectedKPI) async {
+    var token = SpUtil.getString("JWT");
+    if (token == null || token.isEmpty) {
+      throw Exception("Token JWT tidak tersedia. Harap login terlebih dahulu.");
+    }
+
+    var url =
+        'https://tiara.bankaltimtara.co.id/api_eis/api/list/db_kpi_real_mm?x_Cabang=$cabang&x_KPI%5B%5D=$selectedKPI&order=Periode&ordertype=DESC';
+    var headers = {'X-Authorization': 'Bearer $token'};
+    var responsehistorikeuangan = await get(url, headers: headers);
+    return responsehistorikeuangan;
+  }
+}
+
+class Dpk extends CustomGetConnect {
+  Future<Response> datadpk() async {
+    var token = SpUtil.getString("JWT");
+    if (token == null || token.isEmpty) {
+      throw Exception("Token JWT tidak tersedia. Harap login terlebih dahulu.");
+    }
+
+    var url =
+        'https://tiara.bankaltimtara.co.id/api_eis/api/list/v_dpk?recperpage=ALL';
+    var headers = {'X-Authorization': 'Bearer $token'};
+    var responsedpk = await get(url, headers: headers);
+    // print(apiResponse.body);
+    return responsedpk;
+  }
+}
+
+class HistoriDpk extends CustomGetConnect {
+  Future<Response> dataHistoridpk(String cabang, String selectedKPI) async {
+    var token = SpUtil.getString("JWT");
+    if (token == null || token.isEmpty) {
+      throw Exception("Token JWT tidak tersedia. Harap login terlebih dahulu.");
+    }
+
+    var url =
+        'https://tiara.bankaltimtara.co.id/api_eis/api/list/db_kpi_real_mm?x_Cabang=$cabang&x_KPI%5B%5D=$selectedKPI&order=Periode&ordertype=DESC';
+    var headers = {'X-Authorization': 'Bearer $token'};
+    var responsehistorikeuangan = await get(url, headers: headers);
+    return responsehistorikeuangan;
+  }
+}
+
 class UserDataProvider extends CustomGetConnect {
   Future<Response> fetchUserData() async {
     var token = SpUtil.getString("JWT");

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -8,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../data/login_provider.dart';
 import '../../Getdata/views/getdata_view.dart';
 import '../../dblm/views/dblm_view.dart';
+import '../../keuangan/views/khome.dart';
 import '../controllers/menu_baru_controller.dart';
 import 'appbar.dart';
 
@@ -25,7 +27,7 @@ class MenuBaruView extends GetView<MenuBaruController> {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
+          } else if (snapshot.hasData) {
             var userData = snapshot.data?.body['db_user'] ?? [];
             String cabang = userData.isNotEmpty ? userData[0]['Cabang'] : '';
             String wilayah = userData.isNotEmpty ? userData[0]['Wilayah'] : '';
@@ -46,33 +48,24 @@ class MenuBaruView extends GetView<MenuBaruController> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildChartCard(cabang), // Pass cabang here
+                    _buildChartCard(cabang),
                     _buildTabContainer(context, wilayah),
                   ],
                 ),
               ),
             );
+          } else {
+            return const Center(child: Text('No data available'));
           }
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigasi menggunakan GetX dan menghancurkan halaman sebelumnya
           Get.offAll(const MenuBaruView());
         },
-        child: const Icon(Icons.refresh), // Ikon untuk tombol "refresh"
-        backgroundColor: Colors.blue, // Warna latar belakang tombol "refresh"
+        child: const Icon(Icons.refresh),
+        backgroundColor: Colors.blue,
       ),
-    );
-  }
-
-  Widget _buildCombinedContent(BuildContext context, String cabang, Wilayah) {
-    return Column(
-      children: [
-        _buildChartCard(cabang),
-        _buildMenuCard(context),
-        _buildMenuCardDblm(context, Wilayah),
-      ],
     );
   }
 
@@ -85,94 +78,79 @@ class MenuBaruView extends GetView<MenuBaruController> {
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {
-          var aktivitasStatusCode = snapshot.data!['statusCode'];
+          return _buildTabs(context, snapshot.data!, wilayah);
+        } else {
+          return const Center(child: Text('No data available'));
+        }
+      },
+    );
+  }
 
-          return FutureBuilder<List<Map<String, dynamic>>>(
-            future: loadData(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              } else if (snapshot.hasData) {
-                var loadDataList = snapshot.data!;
-                bool hidePencairan = aktivitasStatusCode == 401;
-                bool hideRenbis = loadDataList.isEmpty;
+  Widget _buildTabs(BuildContext context, Map<String, dynamic> aktivitasData,
+      String wilayah) {
+    var aktivitasStatusCode = aktivitasData['statusCode'];
 
-                List<Tab> tabs = [
-                  if (!hideRenbis)
-                    const Tab(
-                      icon: Icon(Icons.business),
-                      text: 'RENBIS',
-                    ),
-                  if (!hidePencairan)
-                    const Tab(
-                      icon: Icon(Icons.money),
-                      text: 'PENCAIRAN',
-                    ),
-                  const Tab(
-                    icon: Icon(Icons.insert_chart),
-                    text: 'DBLM',
-                  ),
-                  const Tab(
-                    icon: Icon(Icons.account_balance),
-                    text: 'KEUANGAN',
-                  ),
-                  const Tab(
-                    icon: Icon(Icons.pie_chart),
-                    text: 'DPK',
-                  ),
-                  const Tab(
-                    icon: Icon(Icons.file_download),
-                    text: 'FILE',
-                  ),
-                ];
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: loadData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (snapshot.hasData) {
+          var loadDataList = snapshot.data!;
+          bool hidePencairan = aktivitasStatusCode == 401;
+          bool hideRenbis = loadDataList.isEmpty;
 
-                List<Color> colors =
-                    List<Color>.filled(tabs.length, const Color(0xFFADD8E6));
+          List<Tab> tabs = [
+            if (!hideRenbis)
+              const Tab(icon: Icon(Icons.business), text: 'RENBIS'),
+            if (!hidePencairan)
+              const Tab(icon: Icon(Icons.money), text: 'PENCAIRAN'),
+            const Tab(icon: Icon(Icons.insert_chart), text: 'DBLM'),
+            const Tab(icon: Icon(Icons.account_balance), text: 'KEUANGAN'),
+            const Tab(icon: Icon(Icons.pie_chart), text: 'DPK'),
+            const Tab(icon: Icon(Icons.file_download), text: 'FILE'),
+          ];
 
-                return TabContainer(
-                  tabEdge: TabEdge.top,
-                  tabsStart: 0.1,
-                  tabsEnd: 0.9,
-                  tabMaxLength: 100,
-                  tabMinLength: 1,
-                  borderRadius: BorderRadius.circular(10),
-                  tabBorderRadius: BorderRadius.circular(10),
-                  childPadding: const EdgeInsets.all(20.0),
-                  selectedTextStyle: const TextStyle(
-                    color: Color.fromARGB(255, 6, 72, 126),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10.0,
-                  ),
-                  unselectedTextStyle: const TextStyle(
-                    color: Color.fromARGB(255, 255, 255, 255),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10.0,
-                  ),
-                  colors: colors,
-                  tabs: tabs,
-                  children: [
-                    if (!hideRenbis)
-                      SingleChildScrollView(
-                        child: _buildMenuCard(context),
-                      ),
-                    if (!hidePencairan) _buildMainContent(wilayah),
-                    SingleChildScrollView(
-                      child: _buildMenuCardDblm(context, wilayah),
-                    ),
-                    Container(),
-                    Container(),
-                    // Add the file data table widget here
-                    SingleChildScrollView(
-                      child: _buildFileDataTable(),
-                    ),
-                  ],
-                );
-              } else {
-                return const Center(child: Text('No data available'));
-              }
-            },
+          List<Color> colors =
+              List<Color>.filled(tabs.length, const Color(0xFFADD8E6));
+
+          return TabContainer(
+            tabEdge: TabEdge.top,
+            tabsStart: 0.1,
+            tabsEnd: 0.9,
+            tabMaxLength: 100,
+            tabMinLength: 1,
+            borderRadius: BorderRadius.circular(10),
+            tabBorderRadius: BorderRadius.circular(10),
+            childPadding: const EdgeInsets.all(20.0),
+            selectedTextStyle: const TextStyle(
+              color: Color.fromARGB(255, 6, 72, 126),
+              fontWeight: FontWeight.bold,
+              fontSize: 10.0,
+            ),
+            unselectedTextStyle: const TextStyle(
+              color: Color.fromARGB(255, 255, 255, 255),
+              fontWeight: FontWeight.bold,
+              fontSize: 10.0,
+            ),
+            colors: colors,
+            tabs: tabs,
+            children: [
+              if (!hideRenbis)
+                SingleChildScrollView(child: _buildMenuCard(context)),
+              if (!hidePencairan) _buildMainContent(wilayah),
+              SingleChildScrollView(
+                  child: _buildMenuCardDblm(context, wilayah)),
+              SingleChildScrollView(
+                  child: _buildMenuCardKeuangan(context, wilayah)),
+              SingleChildScrollView(child: _buildMenuCardDpk(context, wilayah)),
+              SizedBox(
+                height: 400, // Fixed height for vertical scrolling
+                child: FileDataTableWidget(),
+              ),
+            ],
           );
         } else {
           return const Center(child: Text('No data available'));
@@ -277,50 +255,58 @@ class MenuBaruView extends GetView<MenuBaruController> {
         } else if (snapshot.hasData) {
           List<Map<String, dynamic>> data = snapshot.data!;
 
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columns: const [
-                DataColumn(label: Text('File Name')),
-                DataColumn(label: Text('File Period')),
-                DataColumn(label: Text('Download')),
-              ],
-              rows: data.map((item) {
-                final fileNameData = item['file_name'];
-                String fileName;
-                String url = 'https://eis.bankaltimtara.co.id/data_neraca/';
+          return Container(
+            height: 400, // Set a fixed height for the vertical scrollable area
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 40, // Adjust this value as needed
+                  columns: const [
+                    DataColumn(label: Text('File Type')),
+                    DataColumn(label: Text('File Periode')),
+                    DataColumn(label: Text('Download')),
+                  ],
+                  rows: data.map((item) {
+                    final fileNameData = item['file_name'];
+                    String fileName;
+                    String url = 'https://eis.bankaltimtara.co.id/data_neraca/';
 
-                if (fileNameData is Map<String, dynamic>) {
-                  // If file_name is a map, extract the name
-                  fileName = fileNameData['name'] ?? '';
-                } else if (fileNameData is String) {
-                  // If file_name is a string, use it directly
-                  fileName = fileNameData;
-                } else {
-                  // Handle the case where file_name is null or unrecognized type
-                  fileName = 'Unknown';
-                }
+                    if (fileNameData is Map<String, dynamic>) {
+                      // If file_name is a map, extract the name
+                      fileName = fileNameData['name'] ?? '';
+                    } else if (fileNameData is String) {
+                      // If file_name is a string, use it directly
+                      fileName = fileNameData;
+                    } else {
+                      // Handle the case where file_name is null or unrecognized type
+                      fileName = 'Unknown';
+                    }
 
-                // Construct the full URL
-                String downloadUrl = url + fileName;
+                    // Construct the full URL
+                    String downloadUrl = url + fileName;
 
-                return DataRow(cells: [
-                  DataCell(Text(item['file_type'] ?? '')),
-                  DataCell(Text(item['file_period'] ?? '')),
-                  DataCell(
-                    IconButton(
-                      icon: const Icon(Icons.download),
-                      onPressed: () async {
-                        if (await canLaunch(downloadUrl)) {
-                          await launch(downloadUrl);
-                        } else {
-                          throw 'Could not launch $downloadUrl';
-                        }
-                      },
-                    ),
-                  ),
-                ]);
-              }).toList(),
+                    return DataRow(cells: [
+                      DataCell(
+                          Text(item['file_type'] ?? '')), // File type column
+                      DataCell(Text(item['file_period'] ?? '')),
+                      DataCell(
+                        IconButton(
+                          icon: const Icon(Icons.download),
+                          onPressed: () async {
+                            if (await canLaunch(downloadUrl)) {
+                              await launch(downloadUrl);
+                            } else {
+                              throw 'Could not launch $downloadUrl';
+                            }
+                          },
+                        ),
+                      ),
+                    ]);
+                  }).toList(),
+                ),
+              ),
             ),
           );
         } else {
@@ -473,12 +459,22 @@ class MenuBaruView extends GetView<MenuBaruController> {
           if (snapshot.hasData) {
             List<Map<String, dynamic>> data = snapshot.data ?? [];
             salesDataList = data.map((e) {
-              double salesValue = e['Value'] ?? 0.0; // Handle null value
-              double volumeValue = e['Volume'] ?? 0.0; // Handle null value
-              String formattedDate =
-                  e['Periode'].substring(5); // Ambil bulan dan hari saja
+              double salesValue = e['Value'] ?? 0.0;
+              String simplifiedValue1 = simplifyValue1(salesValue);
+
+              // Mengonversi nilai yang telah disederhanakan kembali ke angka
+              double simplifiedSalesValue = double.parse(
+                  simplifiedValue1.replaceAll(RegExp(r'[^0-9]'), ''));
+
+              String originalDate = e['Periode']; // Format: yyyy-mm-dd
+              String year = originalDate.substring(0, 4);
+              String month = originalDate.substring(5, 7);
+              String day = originalDate.substring(8, 10);
+
+              String formattedDate = '$day-$month'; // Format: dd-mm
+
               return SalesData(
-                  formattedDate, salesValue, e['SimplifiedValue'], volumeValue);
+                  formattedDate, simplifiedSalesValue, simplifiedValue1, 0.0);
             }).toList();
 
             // Urutkan data berdasarkan periode
@@ -884,7 +880,7 @@ class MenuBaruView extends GetView<MenuBaruController> {
               borderRadius: BorderRadius.circular(10),
             ),
             color: isAbove100Percent
-                ? const Color.fromARGB(255, 79, 153, 82)
+                ? const Color.fromARGB(219, 0, 245, 163)
                 : const Color.fromARGB(255, 211, 118, 118),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -919,6 +915,258 @@ class MenuBaruView extends GetView<MenuBaruController> {
                   ),
                   Text(
                     'Realisasi: ${isPercentage ? '$realisasi%' : simplifyValue(double.parse(realisasi))}',
+                    style: TextStyle(
+                        fontSize: fontSize * 0.7, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMenuCardKeuangan(BuildContext context, String wilayah) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: keuangan(wilayah),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (snapshot.hasData) {
+          List<Map<String, dynamic>> data = snapshot.data!['data'] ?? [];
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _crossAxisCount(
+                    context), // Menggunakan fungsi untuk menentukan jumlah kolom
+                mainAxisSpacing: 2.0, // Spacing antara baris
+                crossAxisSpacing: 2.0, // Spacing antara kolom
+                childAspectRatio: 1.0, // Aspect ratio setiap item
+              ),
+              itemCount: data.length,
+              itemBuilder: (context, index) {
+                final item = data[index];
+                bool isPercentage = item['KPI'] == 'NIM' ||
+                    item['KPI'] == 'LFR/RIM' ||
+                    item['KPI'] == 'ROE' ||
+                    item['KPI'] == 'ROA' ||
+                    item['KPI'] == 'BOPO' ||
+                    item['KPI'] == 'CAR';
+                return _buildMenuItemK(
+                  title: item['KPI'],
+                  subtitle: item['Cabang'],
+                  deviation: item['Value'],
+                  periode: item['Periode'],
+                  isPercentage: isPercentage,
+                );
+              },
+            ),
+          );
+        } else {
+          return const Center(child: Text('No data available'));
+        }
+      },
+    );
+  }
+
+  Widget _buildMenuItemK({
+    required String title,
+    required String subtitle,
+    required double deviation,
+    required String periode,
+    required bool isPercentage,
+  }) {
+    String modifiedTitle1(String originalTitle) {
+      if (originalTitle == 'KREDIT YANG DIBERIKAN') {
+        return 'KREDIT';
+      } else if (originalTitle == 'LABA/RUGI SEBELUM PAJAK') {
+        return 'LABA/RUGI';
+      } else if (originalTitle == 'PENERIMAAN EXTRACOM') {
+        return 'EXTRACOM';
+      } else {
+        return originalTitle;
+      }
+    }
+
+    final bool isAbove100Percent = deviation > 100;
+    final String formattedValue =
+        isPercentage ? '${deviation.toInt()}%' : simplifyValue1(deviation);
+
+    return GestureDetector(
+      onTap: () {
+        String selectedKPI = title;
+        Get.to(() => const KhomeView(),
+            arguments: {'selectedKPI': selectedKPI});
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double fontSize = constraints.maxWidth * 0.1;
+          return Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            color: isAbove100Percent
+                ? const Color.fromARGB(219, 0, 245, 163)
+                : const Color.fromARGB(255, 211, 118, 118),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    modifiedTitle1(title),
+                    style: TextStyle(
+                      fontSize: fontSize * 0.6,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formattedValue,
+                    style: TextStyle(
+                      fontSize: fontSize * 1.9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Periode: $periode',
+                    style: TextStyle(
+                        fontSize: fontSize * 0.7, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMenuCardDpk(BuildContext context, String wilayah) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: dpk(wilayah),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (snapshot.hasData) {
+          List<Map<String, dynamic>> data = snapshot.data!['data'] ?? [];
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _crossAxisCount(
+                    context), // Menggunakan fungsi untuk menentukan jumlah kolom
+                mainAxisSpacing: 2.0, // Spacing antara baris
+                crossAxisSpacing: 2.0, // Spacing antara kolom
+                childAspectRatio: 1.0, // Aspect ratio setiap item
+              ),
+              itemCount: data.length,
+              itemBuilder: (context, index) {
+                final item = data[index];
+                bool isPercentage = item['KPI'] == 'NIM' ||
+                    item['KPI'] == 'LFR/RIM' ||
+                    item['KPI'] == 'ROE' ||
+                    item['KPI'] == 'ROA' ||
+                    item['KPI'] == 'BOPO' ||
+                    item['KPI'] == 'CAR';
+                return _buildMenuItemD(
+                  title: item['KPI'],
+                  subtitle: item['Cabang'],
+                  deviation: item['Value'],
+                  periode: item['Periode'],
+                  isPercentage: isPercentage,
+                );
+              },
+            ),
+          );
+        } else {
+          return const Center(child: Text('No data available'));
+        }
+      },
+    );
+  }
+
+  Widget _buildMenuItemD({
+    required String title,
+    required String subtitle,
+    required double deviation,
+    required String periode,
+    required bool isPercentage,
+  }) {
+    String modifiedTitle1(String originalTitle) {
+      if (originalTitle == 'KREDIT YANG DIBERIKAN') {
+        return 'KREDIT';
+      } else if (originalTitle == 'LABA/RUGI SEBELUM PAJAK') {
+        return 'LABA/RUGI';
+      } else if (originalTitle == 'PENERIMAAN EXTRACOM') {
+        return 'EXTRACOM';
+      } else {
+        return originalTitle;
+      }
+    }
+
+    final bool isAbove100Percent = deviation > 100;
+    final String formattedValue =
+        isPercentage ? '${deviation.toInt()}%' : simplifyValue1(deviation);
+
+    return GestureDetector(
+      onTap: () {
+        String selectedKPI = title;
+        Get.to(() => const KhomeView(),
+            arguments: {'selectedKPI': selectedKPI});
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double fontSize = constraints.maxWidth * 0.1;
+          return Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            color: isAbove100Percent
+                ? const Color.fromARGB(219, 0, 245, 163)
+                : const Color.fromARGB(255, 211, 118, 118),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    modifiedTitle1(title),
+                    style: TextStyle(
+                      fontSize: fontSize * 0.6,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formattedValue,
+                    style: TextStyle(
+                      fontSize: fontSize * 1.9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Periode: $periode',
                     style: TextStyle(
                         fontSize: fontSize * 0.7, color: Colors.white),
                   ),
@@ -1051,65 +1299,6 @@ Future<Map<String, dynamic>> fetchTotalData(String wilayah) async {
   }
 }
 
-//filter berdasarkan tanggal hari ini
-// Future<List<Map<String, dynamic>>> logaktivitas(String wilayah) async {
-//   try {
-//     var now = DateTime.now();
-//     var formattedDate =
-//         "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-
-//     var loanActivityProvider = LoanActivityProvider();
-//     var loanActivityResponse =
-//         await loanActivityProvider.fetchLoanActivity(formattedDate);
-
-//     if (loanActivityResponse == "Tidak Ada Data Kredit Hari Ini") {
-//       print("Tidak Ada Data Kredit Hari Ini");
-//       return [];
-//     }
-
-//     var loanActivityBody = json.decode(loanActivityResponse);
-//     if (loanActivityBody['success'] == true) {
-//       List<dynamic> dataList = loanActivityBody['lhlon_dd_idx'];
-//       List<Map<String, dynamic>> loanDataList = [];
-
-//       dataList.forEach((item) {
-//         // Cek jika PERIODE sama dengan tanggal sekarang
-//         if (item['PERIODE'] == formattedDate) {
-//           // Jika wilayah adalah "KONSOLIDASI", tambahkan langsung
-//           if (wilayah == "KONSOLIDASI") {
-//             loanDataList.add({
-//               'Cabang': item['Cabang'],
-//               'Loan Type': item['Loan Type'],
-//               'PERIODE': item['PERIODE'],
-//               'Jam Entry': item['Jam Entry'],
-//               'Org Amount': simplifyValue(item['Org Amount']),
-//             });
-//           } else {
-//             // Jika wilayah bukan "KONSOLIDASI", filter berdasarkan nilai Wilayah
-//             if (item['Wilayah'] == wilayah) {
-//               loanDataList.add({
-//                 'Cabang': item['Cabang'],
-//                 'Loan Type': item['Loan Type'],
-//                 'PERIODE': item['PERIODE'],
-//                 'Jam Entry': item['Jam Entry'],
-//                 'Org Amount': simplifyValue(item['Org Amount']),
-//               });
-//             }
-//           }
-//         }
-//       });
-
-//       return loanDataList;
-//     } else {
-//       throw Exception(
-//           "Respons data aktivitas pinjaman tidak sesuai dengan yang diharapkan");
-//     }
-//   } catch (e) {
-//     print('Error: $e');
-//     return [];
-//   }
-// }
-
 Future<List<Map<String, dynamic>>> loadData() async {
   try {
     var userDataProvider = UserDataProvider();
@@ -1187,7 +1376,7 @@ Future<Map<String, dynamic>> loadDatadblm(String wilayah) async {
 
       // Filter data berdasarkan wilayah
       dataList.forEach((item) {
-        if (item['Wilayah'] == wilayah) {
+        if (item['Cabang'] == wilayah) {
           kpiDeviasiList.add({
             'KPI': item['KPI'],
             'Cabang': item['Cabang'],
@@ -1204,6 +1393,110 @@ Future<Map<String, dynamic>> loadDatadblm(String wilayah) async {
       return {'statusCode': apiResponse1.statusCode, 'data': kpiDeviasiList};
     } else {
       throw Exception("Respons data tidak memiliki struktur yang diharapkan");
+    }
+  } catch (e) {
+    print('Error: $e');
+    return {'statusCode': 500, 'data': []};
+  }
+}
+
+Future<Map<String, dynamic>> keuangan(String wilayah) async {
+  try {
+    var keuangan1 = Keuangan();
+    var responsekeuangan = await keuangan1.datakeuangan();
+
+    print('Responsekeuangan: ${responsekeuangan.body}');
+
+    if (responsekeuangan.statusCode == 401) {
+      return {'statusCode': 401, 'data': []};
+    }
+
+    if (responsekeuangan.body == null) {
+      throw Exception("Respons data keuangan kosong");
+    }
+
+    var apiBody = responsekeuangan.body;
+    if (apiBody['success'] == true) {
+      List<dynamic> dataList = apiBody['v_keuangan'];
+      List<Map<String, dynamic>> kpiDeviasiList = [];
+
+      dataList.forEach((item) {
+        bool isCurrency = item['KPI'] == 'TOTAL ASET' ||
+            item['KPI'] == 'BIAYA OPERASIONAL' ||
+            item['KPI'] == 'LABA/RUGI';
+
+        if (item['Cabang'] == wilayah) {
+          kpiDeviasiList.add({
+            'Level': item['Level'],
+            'KodeWilayah': item['KodeWilayah'],
+            'Wilayah': item['Wilayah'],
+            'KodeCabang': item['KodeCabang'],
+            'Cabang': item['Cabang'],
+            'KPI': item['KPI'],
+            'Value': double.tryParse(item['Value'].toString()) ?? 0.0,
+            'Periode': item['Periode'],
+            'isCurrency': isCurrency,
+          });
+        }
+      });
+
+      kpiDeviasiList.sort((a, b) => b['Value'].compareTo(a['Value']));
+
+      return {
+        'statusCode': responsekeuangan.statusCode,
+        'data': kpiDeviasiList
+      };
+    } else {
+      throw Exception(
+          "Respons data keuangan tidak memiliki struktur yang diharapkan");
+    }
+  } catch (e) {
+    print('Error: $e');
+    return {'statusCode': 500, 'data': []};
+  }
+}
+
+Future<Map<String, dynamic>> dpk(String wilayah) async {
+  try {
+    var dpk = Dpk();
+    var responsedpk = await dpk.datadpk();
+
+    print('responsedpk: ${responsedpk.body}');
+
+    if (responsedpk.statusCode == 401) {
+      return {'statusCode': 401, 'data': []};
+    }
+
+    if (responsedpk.body == null) {
+      throw Exception("Respons data dpk kosong");
+    }
+
+    var apiBody = responsedpk.body;
+    if (apiBody['success'] == true) {
+      List<dynamic> dataList = apiBody['v_dpk'];
+      List<Map<String, dynamic>> kpiDeviasiList = [];
+
+      dataList.forEach((item) {
+        if (item['Cabang'] == wilayah) {
+          kpiDeviasiList.add({
+            'Level': item['Level'],
+            'KodeWilayah': item['KodeWilayah'],
+            'Wilayah': item['Wilayah'],
+            'KodeCabang': item['KodeCabang'],
+            'Cabang': item['Cabang'],
+            'KPI': item['KPI'],
+            'Value': double.tryParse(item['Value'].toString()) ?? 0.0,
+            'Periode': item['Periode'],
+          });
+        }
+      });
+
+      kpiDeviasiList.sort((a, b) => b['Value'].compareTo(a['Value']));
+
+      return {'statusCode': responsedpk.statusCode, 'data': kpiDeviasiList};
+    } else {
+      throw Exception(
+          "Respons data dpk tidak memiliki struktur yang diharapkan");
     }
   } catch (e) {
     print('Error: $e');
@@ -1282,15 +1575,15 @@ String simplifyValue1(double value) {
   double absValue = value.abs();
 
   if (absValue >= 1000000000000) {
-    return "${isNegative ? '-' : ''}${(absValue / 1000000000000).toStringAsFixed(0)} T";
+    return "${isNegative ? '-' : ''}${(absValue / 1000000000000).floor()} T";
   } else if (absValue >= 1000000000) {
-    return "${isNegative ? '-' : ''}${(absValue / 1000000000).toStringAsFixed(0)} M";
+    return "${isNegative ? '-' : ''}${(absValue / 1000000000).floor()} M";
   } else if (absValue >= 1000000) {
-    return "${isNegative ? '-' : ''}${(absValue / 1000000).toStringAsFixed(0)} JT";
+    return "${isNegative ? '-' : ''}${(absValue / 1000000).floor()} JT";
   } else if (absValue >= 1000) {
-    return "${isNegative ? '-' : ''}${(absValue / 1000).toStringAsFixed(0)} Rb";
+    return "${isNegative ? '-' : ''}${(absValue / 1000).floor()} Rb";
   } else {
-    return value.toString();
+    return value.toStringAsFixed(0); // Menampilkan angka bulat tanpa desimal
   }
 }
 
@@ -1308,6 +1601,27 @@ String simplifyValue1(double value) {
 //   }
 // }
 
+class DateInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+
+    // Enforce the format of "YYYY/MM/DD"
+    if (text.length == 4 || text.length == 7) {
+      if (oldValue.text.length < newValue.text.length) {
+        return TextEditingValue(
+          text: '${newValue.text}-',
+          selection: TextSelection.fromPosition(
+            TextPosition(offset: newValue.selection.end + 1),
+          ),
+        );
+      }
+    }
+    return newValue;
+  }
+}
+
 class SalesData {
   final String year;
   final double sales;
@@ -1315,6 +1629,278 @@ class SalesData {
   final double volume;
 
   SalesData(this.year, this.sales, this.simplifiedValue1, this.volume);
+}
+
+class FileDataTableWidget extends StatefulWidget {
+  const FileDataTableWidget({Key? key}) : super(key: key);
+
+  @override
+  _FileDataTableWidgetState createState() => _FileDataTableWidgetState();
+}
+
+class _FileDataTableWidgetState extends State<FileDataTableWidget> {
+  final downloadFile apiService = downloadFile();
+  String searchQuery = '';
+  bool isCheckbox1Checked = false;
+  bool isCheckbox2Checked = false;
+  bool isCheckbox3Checked = false;
+  bool isCheckbox4Checked = false;
+  String _currentDateHint = '';
+  bool isMinimized = true;
+  DateTime? selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentDateHint = DateFormat('yyyy-MM-dd').format(DateTime.now());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Search bar and button
+        Container(
+          width: double.infinity, // Makes the container full width
+          height: isMinimized ? 30 : 60, // Toggle height based on state
+          padding: const EdgeInsets.symmetric(horizontal: 4), // Reduced padding
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    prefixIcon:
+                        Icon(Icons.search, size: 18), // Smaller icon size
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                    hintText:
+                        'Search By Period', // Adjust this according to your variable
+                    contentPadding:
+                        const EdgeInsets.all(8), // Minimized content padding
+                  ),
+                  keyboardType: TextInputType.datetime,
+                  inputFormatters: [DateInputFormatter()],
+                  style: TextStyle(fontSize: 14), // Smaller font size
+                  controller: TextEditingController(
+                    text: selectedDate != null
+                        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+                        : '',
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.date_range, // Use the same icon for date picker
+                  size: 24,
+                ),
+                onPressed: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate ?? DateTime.now(),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime(2100),
+                  );
+
+                  if (pickedDate != null && pickedDate != selectedDate) {
+                    setState(() {
+                      selectedDate = pickedDate;
+                      searchQuery =
+                          DateFormat('yyyy-MM-dd').format(selectedDate!);
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+
+        // Checkbox categories in two columns
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              // Column 1: Category 1 and 2
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: isCheckbox1Checked,
+                          onChanged: (value) {
+                            setState(() {
+                              isCheckbox1Checked = value ?? false;
+                            });
+                          },
+                        ),
+                        const SizedBox(
+                            width:
+                                2), // Adjust spacing between checkbox and text
+                        Text(
+                          'Neraca Konsol',
+                          style: TextStyle(fontSize: 14), // Smaller font size
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: isCheckbox2Checked,
+                          onChanged: (value) {
+                            setState(() {
+                              isCheckbox2Checked = value ?? false;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          'Neraca Konven',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Column 2: Category 3 and 4
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: isCheckbox3Checked,
+                          onChanged: (value) {
+                            setState(() {
+                              isCheckbox3Checked = value ?? false;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          'Neraca Syariah',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: isCheckbox4Checked,
+                          onChanged: (value) {
+                            setState(() {
+                              isCheckbox4Checked = value ?? false;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          'Neraca DBLM',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // DataTable
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: apiService.fetchdownloadFile(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else if (snapshot.hasData) {
+                List<Map<String, dynamic>> data = snapshot.data!;
+
+                List<Map<String, dynamic>> filteredData = data.where((item) {
+                  final filePeriod = item['file_period'] ?? '';
+                  final fileCategory = item['file_type'] ?? '';
+
+                  // Apply checkbox filters
+                  if (isCheckbox1Checked && fileCategory != 'neraca_konsol')
+                    return false;
+                  if (isCheckbox2Checked && fileCategory != 'neraca_konven')
+                    return false;
+                  if (isCheckbox3Checked && fileCategory != 'neraca_syariah')
+                    return false;
+                  if (isCheckbox4Checked &&
+                      fileCategory != 'neraca_dblm_konsol') return false;
+
+                  return filePeriod
+                      .toLowerCase()
+                      .contains(searchQuery.toLowerCase());
+                }).toList();
+
+                return ListView(
+                  children: [
+                    DataTable(
+                      dataRowHeight: 40,
+                      columnSpacing: 40,
+                      columns: const [
+                        DataColumn(label: Text('File')),
+                        DataColumn(label: Text('Periode')),
+                        DataColumn(label: Text('Download')),
+                      ],
+                      rows: filteredData.map((item) {
+                        final fileNameData = item['file_name'];
+                        String fileName;
+                        String url =
+                            'https://eis.bankaltimtara.co.id/data_neraca/';
+
+                        if (fileNameData is Map<String, dynamic>) {
+                          fileName = fileNameData['name'] ?? '';
+                        } else if (fileNameData is String) {
+                          fileName = fileNameData;
+                        } else {
+                          fileName = 'Unknown';
+                        }
+
+                        String downloadUrl = url + fileName;
+
+                        return DataRow(cells: [
+                          DataCell(Text(item['file_type'] ?? '')),
+                          DataCell(Text(item['file_period'] ?? '')),
+                          DataCell(
+                            IconButton(
+                              icon: const Icon(Icons.download),
+                              onPressed: () async {
+                                if (await canLaunch(downloadUrl)) {
+                                  await launch(downloadUrl);
+                                } else {
+                                  throw 'Could not launch $downloadUrl';
+                                }
+                              },
+                            ),
+                          ),
+                        ]);
+                      }).toList(),
+                    ),
+                  ],
+                );
+              } else {
+                return const Center(child: Text('No data available'));
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 void main() {

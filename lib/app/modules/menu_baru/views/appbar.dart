@@ -139,7 +139,7 @@ class _CustomAppBarWithMenuState extends State<CustomAppBarWithMenu> {
                 final level = user['Level']?.toString() ?? 'N/A';
                 final cabang = user['Cabang'] ?? 'N/A';
                 final wilayah = user['Wilayah'] ?? 'N/A';
-                final picSmall = user['picSmall'] ?? 'N/A';
+                final picNormal = user['picNormal'] ?? 'N/A';
                 return PopupMenuButton(
                   itemBuilder: (BuildContext context) {
                     return [
@@ -148,7 +148,7 @@ class _CustomAppBarWithMenuState extends State<CustomAppBarWithMenu> {
                           width: double.infinity,
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundImage: NetworkImage('$picSmall'),
+                              backgroundImage: NetworkImage('$picNormal'),
                             ),
                             title: Text(
                               'FullName: $fullName\nLevel: $level\nWilayah: $wilayah\nCabang: $cabang',
@@ -177,7 +177,7 @@ class _CustomAppBarWithMenuState extends State<CustomAppBarWithMenu> {
                   },
                   icon: CircleAvatar(
                     backgroundColor: Colors.white,
-                    backgroundImage: NetworkImage('$picSmall'),
+                    backgroundImage: NetworkImage('$picNormal'),
                   ),
                 );
               } else {

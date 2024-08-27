@@ -6,10 +6,16 @@ import '../modules/MainMenu/bindings/main_menu_binding.dart';
 import '../modules/MainMenu/views/main_menu_view.dart';
 import '../modules/dblm/bindings/dblm_binding.dart';
 import '../modules/dblm/views/dblm_view.dart';
+import '../modules/dpk/bindings/dpk_binding.dart';
+import '../modules/dpk/views/dpk_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
+import '../modules/keuangan/bindings/keuangan_binding.dart';
+import '../modules/keuangan/views/keuangan_view.dart';
 import '../modules/login/bindings/login_binding.dart';
 import '../modules/login/views/login_view.dart';
+import '../modules/masterpage/bindings/masterpage_binding.dart';
+import '../modules/masterpage/views/masterpage_view.dart';
 import '../modules/menu_baru/bindings/menu_baru_binding.dart';
 import '../modules/menu_baru/views/menu_baru_view.dart';
 import '../modules/notif/bindings/notif_binding.dart';
@@ -57,6 +63,21 @@ class AppPages {
       name: _Paths.DBLM,
       page: () => const DblmView(),
       binding: DblmBinding(),
+    ),
+    GetPage(
+      name: _Paths.KEUANGAN,
+      page: () => const KeuanganView(),
+      binding: KeuanganBinding(),
+    ),
+    GetPage(
+      name: _Paths.MASTERPAGE,
+      page: () => const MasterpageView(),
+      binding: MasterpageBinding(),
+    ),
+    GetPage(
+      name: _Paths.DPK,
+      page: () => const DhomeView(),
+      binding: DpkBinding(),
     ),
   ];
 }

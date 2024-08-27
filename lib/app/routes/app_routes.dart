@@ -9,6 +9,9 @@ abstract class Routes {
   static const MENU_BARU = _Paths.MENU_BARU;
   static const NOTIF = _Paths.NOTIF;
   static const DBLM = _Paths.DBLM;
+  static const KEUANGAN = _Paths.KEUANGAN;
+  static const MASTERPAGE = _Paths.MASTERPAGE;
+  static const DPK = _Paths.DPK;
 }
 
 abstract class _Paths {
@@ -20,4 +23,7 @@ abstract class _Paths {
   static const MENU_BARU = '/menu-baru';
   static const NOTIF = '/notif';
   static const DBLM = '/dblm';
+  static const KEUANGAN = '/keuangan';
+  static const MASTERPAGE = '/masterpage';
+  static const DPK = '/dpk';
 }
